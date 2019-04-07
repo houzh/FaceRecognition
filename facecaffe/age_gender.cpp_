@@ -1,0 +1,284 @@
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include "age_gender.hpp"
+#include "caffe/caffe.hpp"
+#include<sys/time.h>
+
+using namespace caffe;
+//#define MOBILE_NET
+#define CPU_ONLY
+
+AgeGenderClassifier::AgeGenderClassifier()
+{
+  const char*ages[]={"0-2","4-6","8-13","15-20","25-32","38-43","48-53","60-"};
+  labels_[0].push_back("Male");
+  labels_[0].push_back("Female");
+  for(int i=0;i<8;i++)
+    labels_[1].push_back(ages[i]);
+  enable_age=0;
+  enable_gender=0;
+}
+
+int AgeGenderClassifier::Init(std::string model_dir_){
+  model_dir=model_dir_;
+  const char*net_names[]={"Gender_NET","Age_NET"};
+  const char*graph_names[]={"Gender_Graph","Age_Graph"};
+  const char*proto_names[]={"deploy_gender.prototxt","deploy_age.prototxt"};
+  const char*model_names[]={"gender_net-new.caffemodel","age_net-new.caffemodel"};
+
+  std::string proto_name,model_name;
+  const char*proto_name_,*mdl_name_;
+  const char*Net_Name="Gender_NET";
+  int dims[]={1,3,227,227};
+  cout<<"model_dir="<<model_dir<<endl;
+  for(int i=0;i<2;i++){
+      proto_name=model_dir+"/"+proto_names[i];//deploy_gender.prototxt";
+      model_name=model_dir+"/"+model_names[i];//gender_net-new.caffemodel";
+      proto_name_=proto_name.c_str();
+      mdl_name_=model_name.c_str();
+
+      load_model(net_names[i],"caffe",proto_name_,mdl_name_);
+      graph[i]=create_runtime_graph(graph_names[i],net_names[i],NULL);
+      
+      input_tensor[i]=get_graph_input_tensor(graph[i],0,0);
+      if(set_tensor_shape(input_tensor[i],dims,4)<0)
+	  cout<<"set_tensor_shape filed"<<endl;
+      
+      if(prerun_graph(graph[i])<0)
+          cout<<"prerun gender grpah failed\n";
+      
+      input_data[i]=(float*)malloc(227*227*3*sizeof(float));
+      set_tensor_buffer(input_tensor[i],input_data[i],3*227*227*sizeof(float));
+  }
+
+  num_channels_=3;
+  input_geometry_=cv::Size(227,227);
+  SetMean(model_dir+"/mean.binaryproto");
+  return 0;
+}
+
+void AgeGenderClassifier::enable(int age,int gender){
+  enable_age=age;
+  enable_gender=gender;
+  cout<<"====enable_age="<<age<<" enable_gender="<<gender<<endl;
+}
+
+int AgeGenderClassifier::GetAgeGender(cv::Mat&frame,int*age,Gender*gender){
+      /* Print the top N predictions. */
+    if( gender && enable_gender ){
+       std::vector<Prediction> predictions = Classify(0,frame);
+       *gender=(predictions[0].first.compare("Male")==0)?Male:Female;
+       std::cout<<((*gender==Male)?"Male":"Female")<<" compate<"<<predictions[0].first
+	       <<",Male>="<<predictions[0].first.compare("Male") <<std::endl;
+       for(int i=0;i<predictions.size();i++){
+	   cout<<std::fixed << std::setprecision(4)<<predictions[i].second<<":"<<predictions[i].first<<std::endl;
+       }
+    }
+    if( age && enable_age ){
+       unsigned char agelo=0,agehi=0xFF;
+       std::vector<Prediction> predictions = Classify(1,frame);
+       std::string predict=predictions[0].first;
+       const char*s=predict.c_str();
+       agelo=atoi(s);
+       if((s=strchr(s,'-'))!=NULL)
+	  agehi=atoi(s+1);
+       *age=(agehi<<8)|agelo;
+       std::cout<<"Age="<<predict<<"===>>"<<(int)agelo<<"-"<<(int)agehi<<std::endl;
+       for(int i=0;i<predictions.size();i++){
+	   cout<<std::fixed << std::setprecision(4)<<predictions[i].second<<":"<<predictions[i].first<<std::endl;
+       }
+    }
+    return 0;
+}
+
+int AgeGenderClassifier::GetAge(cv::Mat&frame,int&age){
+    Gender gender;
+    return GetAgeGender(frame,&age,&gender);
+}
+
+int AgeGenderClassifier::GetGender(cv::Mat&frame,Gender&gender){
+    int age;
+    return GetAgeGender(frame,&age,&gender);
+}
+
+static bool PairCompare(const std::pair<float, int>& lhs,
+                        const std::pair<float, int>& rhs) {
+  return lhs.first > rhs.first;
+}
+
+std::vector<int> AgeGenderClassifier::Argmax(const std::vector<float>& v, int N) {
+  std::vector<std::pair<float, int> > pairs;
+  for (size_t i = 0; i < v.size(); ++i)
+    pairs.push_back(std::make_pair(v[i], i));
+  std::partial_sort(pairs.begin(), pairs.begin() + N, pairs.end(), PairCompare);
+
+  std::vector<int> result;
+  for (int i = 0; i < N; ++i)
+    result.push_back(pairs[i].second);
+  return result;
+}
+
+std::vector<Prediction> AgeGenderClassifier::Classify(int mode,const cv::Mat& img, int N) {
+#if 1//DEBUG
+    struct timeval tv_start, tv_end;
+    gettimeofday(&tv_start, NULL);
+#endif
+
+    std::vector<float> output = Predict(mode,img);
+#if 1 //DEBUG
+    gettimeofday(&tv_end, NULL);
+    printf("Time of %s detect : %ld\n",(mode==0?"Gender":"Age"), 
+		    tv_end.tv_sec * 1000 + tv_end.tv_usec / 1000 - tv_start.tv_sec * 1000 - tv_start.tv_usec / 1000);
+#endif
+
+  N = std::min<int>(labels_[mode].size(), N);
+  std::vector<int> maxN = Argmax(output, N);
+  std::vector<Prediction> predictions;
+  for (int i = 0; i < N; ++i) {
+    int idx = maxN[i];
+    predictions.push_back(std::make_pair(labels_[mode][idx], output[idx]));
+  }
+  return predictions;
+}
+
+void AgeGenderClassifier::SetMean(const std::string& mean_file)
+{  
+  BlobProto blob_proto;
+  ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
+
+  /* Convert from BlobProto to Blob<float> */
+  Blob<float> mean_blob;
+  mean_blob.FromProto(blob_proto);
+  //CHECK_EQ(mean_blob.channels(), num_channels_)
+  //  << "Number of channels of mean file doesn't match input layer.";
+
+  /* The format of the mean file is planar 32-bit float BGR or grayscale. */
+  std::vector<cv::Mat> channels;
+  float* data = mean_blob.mutable_cpu_data();
+  for (int i = 0; i < num_channels_; ++i) {
+    /* Extract an individual channel. */
+    cv::Mat channel(mean_blob.height(), mean_blob.width(), CV_32FC1, data);
+    channels.push_back(channel);
+    data += mean_blob.height() * mean_blob.width();
+  }
+
+  /* Merge the separate channels into a single image. */
+  cv::Mat mean;
+  cv::merge(channels, mean);
+
+  /* Compute the global mean pixel value and create a mean image
+   * filled with this value. */
+  cv::Scalar channel_mean = cv::mean(mean);
+  mean_ = cv::Mat(cv::Size(227,227), mean.type(), channel_mean);
+
+}
+
+std::vector<float> AgeGenderClassifier::Predict(int mode,const cv::Mat& img) {
+  std::vector<cv::Mat> input_channels;
+  WrapInputLayer(input_data[mode],num_channels_,&input_channels);//get channel data buffer to channels
+
+  Preprocess(img, &input_channels);//split img's rgb channels'data to input_channels
+  if(run_graph(graph[mode],1)<0)
+    cout<<"run gender graph failed\n";//net_->Forward();//run tensor graph
+  float out_data[32];
+  tensor_t out_tensor=get_graph_output_tensor(graph[mode],0,0);
+  int out_size=get_tensor_buffer_size(out_tensor);
+  if(get_tensor_data(out_tensor,out_data,out_size)<0)
+      cout<<"get_graph_output failed"<<endl;
+  cout<<__FUNCTION__<<" graph out:"<<out_data[0]<<","<<out_data[1]<<" size="<<out_size<<endl;
+  out_size/=sizeof(float);
+  return std::vector<float>(out_data,out_data+out_size);
+}
+
+void AgeGenderClassifier::WrapInputLayer(float*input_data,int channels,std::vector<cv::Mat>* input_channels) {
+  int width = 227;
+  int height = 227;
+  for (int i = 0; i < channels; ++i) {
+    cv::Mat channel(height, width, CV_32FC1, input_data);
+    input_channels->push_back(channel);
+    input_data += width * height;
+  }
+}
+
+void AgeGenderClassifier::Preprocess(const cv::Mat& img,std::vector<cv::Mat>* input_channels) {
+  /* Convert the input image to the input image format of the network. */
+  cv::Mat sample;
+  cv::Mat sample_resized;
+  cv::Mat sample_float;
+  if (img.channels() == 3 && num_channels_ == 1)
+    cv::cvtColor(img, sample, cv::COLOR_BGR2GRAY);
+  else if (img.channels() == 4 && num_channels_ == 1)
+    cv::cvtColor(img, sample, cv::COLOR_BGRA2GRAY);
+  else if (img.channels() == 4 && num_channels_ == 3)
+    cv::cvtColor(img, sample, cv::COLOR_BGRA2BGR);
+  else if (img.channels() == 1 && num_channels_ == 3)
+    cv::cvtColor(img, sample, cv::COLOR_GRAY2BGR);
+  else
+    sample = img;
+
+  if (sample.size() != input_geometry_)
+    cv::resize(sample, sample_resized, input_geometry_);
+  else
+    sample_resized = sample;
+
+  if (num_channels_ == 3)
+    sample_resized.convertTo(sample_float, CV_32FC3);
+  else
+    sample_resized.convertTo(sample_float, CV_32FC1);
+
+#ifdef MOBILE_NET
+  cv::Mat sample_normalized, sample_normalized1;
+  cv::subtract(sample_float, mean_, sample_normalized1);
+  cv::multiply(sample_normalized1, 0.017, sample_normalized);
+#else
+  cv::Mat sample_normalized;
+  cv::subtract(sample_float, mean_, sample_normalized);
+#endif
+   cv::split(sample_normalized, *input_channels);
+}
+#ifdef _CAFFE_TEST_
+#include <dirent.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <stdio.h>
+int main(int argc, char * argv[])
+{
+    init_tengine_library();
+    if(request_tengine_version("0.1")<0)
+        return -1;
+    if(argc<2){
+       std::cout<<"Usage:"<<argv[0]<<" file or path"<<std::endl;
+       return -1;
+    }
+    DIR *dir;
+    char*path=argv[1];
+    char full_path[512];
+    struct dirent*ptr;
+    AgeGenderClassifier ccc;
+    ccc.Init();
+    if((dir=opendir(path))==NULL){
+	cv::Mat face=cv::imread(argv[1]);
+        Gender gender;
+        ccc.GetGender(face,gender);
+        return 0;
+    }
+    cout<<"============FaceDemo=======test from file:"<<path<<endl;
+    while((ptr=readdir(dir))){
+       struct stat file_stat;
+       strcpy(full_path,path);
+       strcat(full_path,"/");
+       strcat(full_path,ptr->d_name);
+       stat(full_path,&file_stat);
+       cout<<"\n\nchecking face_image:"<<full_path<<endl;
+       if(S_ISDIR(file_stat.st_mode))continue;
+       cv::Mat face=cv::imread(full_path,1);
+       Gender gender;
+       ccc.GetGender(face,gender);
+   }
+
+   return 0;
+}
+#endif
