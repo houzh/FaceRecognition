@@ -17,7 +17,7 @@ MobileFacenet::MobileFacenet(const std::string&dir){
     std::cout<<" MobileFacenet.InferShape()="<<rc<<std::endl;
     rc=prerun_graph(graph);
     //if(rc!=0)dump_graph(graph);
-    cout<<__func__<<" prerun_graph="<<rc<<" graph="<<graph<<endl<<endl;
+    cout<<"Mobilefacenet.prerun="<<rc<<" graph="<<graph<<endl<<endl;
     out_tensor=get_graph_output_tensor(graph,0,0);
 }
 MobileFacenet::~MobileFacenet(){
@@ -29,7 +29,6 @@ MobileFacenet::~MobileFacenet(){
 static void get_data(float* input_data, Mat &gray, int img_h, int img_w)
 {
     cv::Mat sample;
-    std::cout<<"get_data channels="<<gray.channels()<<std::endl;
     std::vector<cv::Mat>channels;
     if(gray.channels()>1){
       gray.convertTo(sample, CV_32FC3);
@@ -66,10 +65,9 @@ int MobileFacenet::GetFeature(const cv::Mat&frame,FaceBox&box,float*feature)
     }
 
     int rc=run_graph(graph, 1);//!=0)
-    if(rc!=0)cout<<__FUNCTION__<<" run_graph ="<<rc<<endl;
     float *data = (float *)get_tensor_buffer(out_tensor);
-    outsize=get_tensor_buffer_size(out_tensor);
+    outsize=get_tensor_buffer_size(out_tensor)/sizeof(float);
     for(int i=0;i<outsize;i++)
-	    feature[i]=data[i];
+	 feature[i]=data[i];
     return outsize;
 }

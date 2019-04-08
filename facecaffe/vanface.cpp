@@ -9,10 +9,10 @@ VanFace::VanFace(const std::string&dir){
     graph=create_graph(nullptr,"caffe",proto.c_str(),model.c_str());
     input_tensor =get_graph_input_tensor(graph, 0, 0);
     get_tensor_shape(input_tensor,dims,4);
-    cout<<"==== VanFace.dims="<<dims[0]<<","<<dims[1]<<","<<dims[2]<<","<<dims[3]<<endl;
+    cout<<"\n==== VanFace.dims="<<dims[0]<<","<<dims[1]<<","<<dims[2]<<","<<dims[3]<<endl;
     input_data = (float *)malloc(sizeof(float) * dims[1]*dims[2]*dims[3]);
     int rc=prerun_graph(graph);
-    cout<<__func__<<" prerun_graph="<<rc<<" graph="<<graph<<endl<<endl;
+    cout<<"Vanface.prerun="<<rc<<" graph="<<graph<<endl<<endl;
     out_tensor=get_graph_output_tensor(graph,0,0);
 }
 VanFace::~VanFace(){
@@ -92,4 +92,5 @@ int VanFace::GetLandmark(const cv::Mat&frame,FaceBox&box)
 int VanFace::GetLandmark(const cv::Mat&frame,std::vector<FaceBox>&boxes){
     for(int i=0;i<boxes.size();i++)
 	 GetLandmark(frame,boxes[i]);
+    return boxes.size();
 }

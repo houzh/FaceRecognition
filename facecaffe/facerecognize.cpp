@@ -33,6 +33,7 @@ FaceRecognize::FaceRecognize(const std::string& _dir,int mode){
     pmtcnn->load_3model(_dir);
     mfnet=new MobileFacenet(_dir);
     vanface=new VanFace(_dir);
+    std::cout<<"mtcnn="<<pmtcnn<<" mfnet="<<mfnet<<" vanface="<<vanface<<std::endl;
 }
 
 /*
@@ -85,7 +86,6 @@ void FaceRecognize::GetAgeGender(cv::Mat&frame, FaceBox &b,int*age,int*gender)
 
 int FaceRecognize::Detect(cv::Mat &frame,std::vector<FaceBox>&boxes){
     struct timeval tv_start;
-    std::cout<<"FaceRecognize::"<<__FUNCTION__<<std::endl;
     gettimeofday(&tv_start,NULL);
     pmtcnn->detect(frame,boxes);
     vanface->GetLandmark(frame,boxes);

@@ -20,7 +20,6 @@ class caffe_mtcnn: public mtcnn {
         ~caffe_mtcnn();
 
     protected:
-
         void copy_one_patch(const cv::Mat& img,FaceBox&input_box,float * data_to, int width, int height);
 
         int run_PNet(const cv::Mat& img, scale_window& win, std::vector<FaceBox>& box_list);

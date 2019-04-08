@@ -1,8 +1,6 @@
 package com.facerecognize;
-//import android.graphics.PointF;
 
 public class FaceBox{
-    public final static int MAX_LANDMARK=5;
     public float []bounds;
     public float score;
     public float [] regress;

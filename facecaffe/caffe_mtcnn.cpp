@@ -108,7 +108,6 @@ void caffe_mtcnn::detect(cv::Mat& img, std::vector<FaceBox>& face_list)
 
     run_ONet(working_img, rnet_boxes, total_onet_boxes);
 
-
     //calculate the landmark
     for(unsigned int i = 0; i < total_onet_boxes.size(); i++) {
         FaceBox& box = total_onet_boxes[i];
@@ -353,16 +352,7 @@ void caffe_mtcnn::run_ONet(const cv::Mat& img, std::vector<FaceBox>& rnet_boxes,
         reg_data+=reg_page_size;
         points_data+=points_page_size; 
     }
-#ifdef TENGINE_API_2 
-    release_graph_tensor(input_tensor); 
-    release_graph_tensor(tensor);
-#endif
 }	
-
-static mtcnn * caffe_creator(void)
-{
-    return new caffe_mtcnn();
-}
 
 //REGISTER_MTCNN_CREATOR(caffe,caffe_creator);
 

@@ -19,7 +19,7 @@ JNIEXPORT jlong JNICALL Java_com_facerecognize_FaceRecognize_nativeCreate
 {
     FaceRecognize*mFaceRecognize;
     const char *pathStr =env->GetStringUTFChars(moddir, NULL);
-    LOGE("===>>DIR=%s modelPath:",__FUNCTION__,pathStr);
+    LOGE("===>>DIR=%s modelPath:%s",__FUNCTION__,pathStr);
     float threshold_p=.6f;//Util::String2Double(Config::Instance()->GetValue("Threshold_P"));
     float threshold_r=.6f;//Util::String2Double(Config::Instance()->GetValue("Threshold_R"));
     float threshold_o=.6f;//Util::String2Double(Config::Instance()->GetValue("Threshold_O"));
@@ -27,7 +27,7 @@ JNIEXPORT jlong JNICALL Java_com_facerecognize_FaceRecognize_nativeCreate
 
     mFaceRecognize=new FaceRecognize(pathStr,0);
     int ret=mFaceRecognize->Init(threshold_p,threshold_r,threshold_o, 0.5, 0.7,min_size);
-    LOGE("FaceRecognize.Init()=%d",ret);
+    std::cout<<"FaceRecognize.Init()="<<ret<<" fc="<<mFaceRecognize<<std::endl;
     return (jlong)mFaceRecognize;
 }
 
@@ -110,22 +110,16 @@ JNIEXPORT jint JNICALL Java_com_facerecognize_FaceRecognize_detect
    FaceRecognize*fc=GET_OBJECT(env,thiz);
    cv::Mat *frame=GET_MAT(env,_frame);
    std::vector<FaceBox>boxes;
-   std::cout<<__FUNCTION__<<" fc="<<fc<<std::endl;
    int ret=fc->Detect(*frame,boxes);
-   std::cout<<__FUNCTION__<<":"<<__LINE__<<std::endl;
    jclass boxclass=env->FindClass("com/facerecognize/FaceBox");
    jmethodID mid =env->GetMethodID(boxclass, "<init>","()V");
-   std::cout<<__FUNCTION__<<":"<<__LINE__<<std::endl;
    for(int i=0;i<ret;i++){
       jobject boxobj;//=env->GetObjectArrayElement(boxArray,i);
       boxobj=env->NewObject(boxclass, mid);
-      std::cout<<__FUNCTION__<<":"<<__LINE__<<std::endl;
       FaceBox2Object(env,boxes[i],boxobj);
-      std::cout<<__FUNCTION__<<":"<<__LINE__<<std::endl;
       env->SetObjectArrayElement(boxArray,i,boxobj);
       env->DeleteLocalRef(boxobj);
    }
-   std::cout<<__FUNCTION__<<":"<<__LINE__<<std::endl;
    return ret;
 }
 /*
