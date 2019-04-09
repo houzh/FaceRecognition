@@ -24,7 +24,7 @@ class FaceRecognize{
     public:
         FaceRecognize(const std::string&_model_dir,int mode=0);
         int Init(double threshold_p, double threshold_r, double threshold_o, double threshold_score, double factor, int mim_size);
-	int Detect(cv::Mat &frame,std::vector<FaceBox> &face_info);
+	int Detect(cv::Mat &frame,std::vector<FaceBox> &face_info,bool landmark68=false);
 	int GetFeature(cv::Mat& frame,FaceBox &box,std::vector<float>& feature);
 	int GetFeature(cv::Mat& frame,FaceBox &box,float* feature,int fsize);
         

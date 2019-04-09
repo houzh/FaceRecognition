@@ -102,15 +102,15 @@ static void Object2FaceBox(JNIEnv*env,jobject boxobj,FaceBox &box){
 /*
  * Class:     FaceRecognize
  * Method:    detect
- * Signature: (Lorg/opencv/core/Mat;[Lcom/facerecognize/FaceBox;)I
+ * Signature: (Lorg/opencv/core/Mat;[Lcom/facerecognize/FaceBox;Z)I
  */
 JNIEXPORT jint JNICALL Java_com_facerecognize_FaceRecognize_detect
-  (JNIEnv *env, jobject thiz, jobject _frame,jobjectArray boxArray)
+  (JNIEnv *env, jobject thiz, jobject _frame,jobjectArray boxArray,jboolean landmark68)
 {
    FaceRecognize*fc=GET_OBJECT(env,thiz);
    cv::Mat *frame=GET_MAT(env,_frame);
    std::vector<FaceBox>boxes;
-   int ret=fc->Detect(*frame,boxes);
+   int ret=fc->Detect(*frame,boxes,landmark68);
    jclass boxclass=env->FindClass("com/facerecognize/FaceBox");
    jmethodID mid =env->GetMethodID(boxclass, "<init>","()V");
    for(int i=0;i<ret;i++){
@@ -195,7 +195,7 @@ JNIEXPORT jint JNICALL Java_com_facerecognize_FaceRecognize_getFeatureSize
 
 static JNINativeMethod methods[] = {
 	{"nativeCreate","(Ljava/lang/String;)J",(void*)Java_com_facerecognize_FaceRecognize_nativeCreate },
-	{"detect","(Lorg/opencv/core/Mat;[Lcom/facerecognize/FaceBox;)I",
+	{"detect","(Lorg/opencv/core/Mat;[Lcom/facerecognize/FaceBox;Z)I",
 		(void*)Java_com_facerecognize_FaceRecognize_detect},
 	{"getFeature","(Lorg/opencv/core/Mat;Lcom/facerecognize/FaceBox;[F)I",
 		(void*)Java_com_facerecognize_FaceRecognize_getFeature },

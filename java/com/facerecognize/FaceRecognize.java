@@ -6,7 +6,10 @@ import com.facerecognize.FaceBox;
 public class FaceRecognize{
   private final long nativeObj; //used for native JNI,DO NOT modify this field
   private static native long nativeCreate(String model_dir);
-  public native int detect(Mat frame,FaceBox[] box);
+  public int detect(Mat frame,FaceBox[] boxes){
+      detect(frame,boxes,false);
+  }
+  public native int detect(Mat frame,FaceBox[] boxes,boolean landmark68);
   public native int getFeature(Mat frame,FaceBox box,float[] featuer);
   public native float matchFeature(float[]feature1,float[] feature2);
   public native int getFeatureSize();

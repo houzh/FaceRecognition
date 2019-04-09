@@ -55,13 +55,28 @@ void TestFaceDemo(const char*path){
     }
     //fd.LocalSave("faces.data");
 }
+void TestModel(const string& path,const string&pname,const string&mname)
+{
+    int rc,rc2;
+    string proto=path+"/"+pname;
+    string model=path+"/"+mname;
+    graph_t graph=create_graph(NULL,"caffe",proto.c_str(),model.c_str());
+    if(graph==nullptr){
+	   std::cout<<proto<<" load failed"<<std::endl;
+	   return;
+    }
+    rc=infer_shape(graph);
+    rc2=prerun_graph(graph);
+    std::cout<<"infer="<<rc<<" prerun="<<rc2<<std::endl;
+}
 int main(int argc, char * argv[])
 {
     init_tengine_library();
-    /*if(argc == 2){
-	TestFaceDemo(argv[1]);
+    if(argc == 4){
+	//TestFaceDemo(argv[1]);
+	TestModel(argv[1],argv[2],argv[3]);
 	return 0;
-    }*/
+    }
 
 #if 1 
     namedWindow("AID-SHOW", 0);

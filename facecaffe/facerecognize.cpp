@@ -84,11 +84,12 @@ void FaceRecognize::GetAgeGender(cv::Mat&frame, FaceBox &b,int*age,int*gender)
      }
 }
 
-int FaceRecognize::Detect(cv::Mat &frame,std::vector<FaceBox>&boxes){
+int FaceRecognize::Detect(cv::Mat &frame,std::vector<FaceBox>&boxes,bool landmark68){
     struct timeval tv_start;
     gettimeofday(&tv_start,NULL);
     pmtcnn->detect(frame,boxes);
-    vanface->GetLandmark(frame,boxes);
+    if(landmark68)
+        vanface->GetLandmark(frame,boxes);
     struct timeval tv_end;
     gettimeofday(&tv_end, NULL);
     std::cout<<"Detect's time:"<<tv_end.tv_sec*1000 + tv_end.tv_usec/1000 - tv_start.tv_sec*1000
