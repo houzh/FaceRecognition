@@ -27,9 +27,10 @@ class caffe_mtcnn: public mtcnn {
         void run_ONet(const cv::Mat& img,std::vector<FaceBox>& rnet_boxes, std::vector<FaceBox>& output_boxes);
 
     private:
-        graph_t PNet_graph = NULL;
-        graph_t RNet_graph = NULL;
-        graph_t ONet_graph = NULL;
+        graph_t graph[3];
+        tensor_t input_tensor[3];
+	float*input_data[3];
+	int input_size[3];
 };
 
 
