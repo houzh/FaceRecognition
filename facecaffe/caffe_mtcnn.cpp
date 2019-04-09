@@ -13,6 +13,7 @@ caffe_mtcnn::~caffe_mtcnn(void)
     for(int i=0;i<3;i++){
         destroy_graph(graph[i]);
 	release_graph_tensor(input_tensor[i]);
+	free(input_data[i]);
     }
 }
 
