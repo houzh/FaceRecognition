@@ -35,6 +35,10 @@ FaceRecognize::FaceRecognize(const std::string& _dir,int mode){
     vanface=new VanFace(_dir);
     feature_len=0;
     std::cout<<"mtcnn="<<pmtcnn<<" mfnet="<<mfnet<<" vanface="<<vanface<<std::endl;
+#ifndef NDEBUG
+    verbose=1;
+#endif
+
 }
 
 /*
@@ -81,7 +85,8 @@ void FaceRecognize::GetAgeGender(cv::Mat&frame, FaceBox &b,int*age,int*gender)
      if(verbose){
           struct timeval tv_end;
           gettimeofday(&tv_end, NULL);
-          printf("time of GetAgeGender : %ld\n", tv_end.tv_sec * 1000 + tv_end.tv_usec / 1000 - tv_start.tv_sec * 1000 - tv_start.tv_usec / 1000);
+	  std::cout<<"GetAgeGender's time:"<<tv_end.tv_sec * 1000 + tv_end.tv_usec / 1000 
+			  - tv_start.tv_sec * 1000 - tv_start.tv_usec / 1000<<std::endl;
      }
 }
 
@@ -89,12 +94,14 @@ int FaceRecognize::Detect(cv::Mat &frame,std::vector<FaceBox>&boxes,bool landmar
     struct timeval tv_start;
     gettimeofday(&tv_start,NULL);
     pmtcnn->detect(frame,boxes);
-    if(landmark68)
+    if(landmark68 &&boxes.size()>0)
         vanface->GetLandmark(frame,boxes);
-    struct timeval tv_end;
-    gettimeofday(&tv_end, NULL);
-    std::cout<<"Detect's time:"<<tv_end.tv_sec*1000 + tv_end.tv_usec/1000 - tv_start.tv_sec*1000
+    if(verbose){
+        struct timeval tv_end;
+        gettimeofday(&tv_end, NULL);
+        std::cout<<"Detect's time:"<<tv_end.tv_sec*1000 + tv_end.tv_usec/1000 - tv_start.tv_sec*1000
 	    - tv_start.tv_usec/1000<<std::endl;
+    }
     return boxes.size();
 }
 
@@ -113,12 +120,15 @@ int FaceRecognize::GetFeature(cv::Mat& frame,FaceBox &box,float* feature,int fsi
 int FaceRecognize::get_feature(cv::Mat& frame,FaceBox &box,float* feature,int fsize){
     struct timeval tv_start;
     gettimeofday(&tv_start,NULL);
-    struct timeval tv_end;
     int ret=mfnet->GetFeature(frame,box,feature);
     if(ret>0)
 	  feature_len=ret;
-    gettimeofday(&tv_end, NULL);
-    std::cout<<"GetFeature's time:"<<tv_end.tv_sec*1000 + tv_end.tv_usec/1000 - tv_start.tv_sec*1000 - tv_start.tv_usec/1000<<std::endl;
+    if(verbose){
+        struct timeval tv_end;
+        gettimeofday(&tv_end, NULL);
+        std::cout<<"GetFeature's time:"<<tv_end.tv_sec*1000 + tv_end.tv_usec/1000 
+		- tv_start.tv_sec*1000 - tv_start.tv_usec/1000<<std::endl;
+    }
     return ret;
 }
 
