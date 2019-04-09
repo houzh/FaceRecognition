@@ -33,6 +33,7 @@ FaceRecognize::FaceRecognize(const std::string& _dir,int mode){
     pmtcnn->load_3model(_dir);
     mfnet=new MobileFacenet(_dir);
     vanface=new VanFace(_dir);
+    feature_len=0;
     std::cout<<"mtcnn="<<pmtcnn<<" mfnet="<<mfnet<<" vanface="<<vanface<<std::endl;
 }
 
@@ -113,10 +114,12 @@ int FaceRecognize::get_feature(cv::Mat& frame,FaceBox &box,float* feature,int fs
     struct timeval tv_start;
     gettimeofday(&tv_start,NULL);
     struct timeval tv_end;
-    int outsize=mfnet->GetFeature(frame,box,feature);
+    int ret=mfnet->GetFeature(frame,box,feature);
+    if(ret>0)
+	  feature_len=ret;
     gettimeofday(&tv_end, NULL);
-    printf("time of get_feature : %ld\n", tv_end.tv_sec * 1000 + tv_end.tv_usec / 1000 - tv_start.tv_sec * 1000 - tv_start.tv_usec / 1000);
-    return outsize;
+    std::cout<<"GetFeature's time:"<<tv_end.tv_sec*1000 + tv_end.tv_usec/1000 - tv_start.tv_sec*1000 - tv_start.tv_usec/1000<<std::endl;
+    return ret;
 }
 
 void FaceRecognize::FaceMatch(const float*feature1,const float*feature2, float*match_score)
