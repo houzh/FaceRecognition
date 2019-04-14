@@ -16,9 +16,10 @@ MobileFacenet::MobileFacenet(const std::string&dir){
     int rc=infer_shape(graph);
     std::cout<<" MobileFacenet.InferShape()="<<rc<<std::endl;
     rc=prerun_graph(graph);
-    //if(rc!=0)dump_graph(graph);
-    cout<<"Mobilefacenet.prerun="<<rc<<" graph="<<graph<<endl<<endl;
     out_tensor=get_graph_output_tensor(graph,0,0);
+    get_tensor_shape(out_tensor,dims,4);
+    feature_len=dims[1];
+    cout<<"Mobilefacenet.prerun="<<rc<<" graph="<<graph<<endl<<endl;
 }
 MobileFacenet::~MobileFacenet(){
     release_graph_tensor(input_tensor);
@@ -37,13 +38,13 @@ static void get_data(float* input_data, Mat &gray, int img_h, int img_w)
           input_data+=img_w*img_h;
           channels.push_back(channel);
       }
-      sample/=256.f;
+      //sample/=256.f;//For model Lightened_CNN
       cv::split(sample,channels);
       return;
     }else{
       cv::Mat channel(img_w,img_h,CV_32FC1,input_data);
       gray.convertTo(channel,CV_32FC1);
-      channel/=256.f;
+      //channel/=256.f;//For model Lightened_CNN
     }
 }
 int MobileFacenet::GetFeature(const cv::Mat&frame,FaceBox&box,float*feature)
@@ -59,12 +60,9 @@ int MobileFacenet::GetFeature(const cv::Mat&frame,FaceBox&box,float*feature)
     //get face feature
 
     get_data(input_data,aligned,dims[3]/*img_h*/,dims[2]/*img_w*/);
-    if (set_tensor_buffer(input_tensor, input_data, dims[2]*dims[3] * sizeof(float)*dims[1]) < 0){
-        std::printf("set buffer for tensor: %s failed\n", get_tensor_name(input_tensor));
-        return 0;
-    }
+    set_tensor_buffer(input_tensor,input_data,dims[1]*dims[2]*dims[3]*sizeof(float));
 
-    int rc=run_graph(graph, 1);//!=0)
+    run_graph(graph, 1);
     float *data = (float *)get_tensor_buffer(out_tensor);
     outsize=get_tensor_buffer_size(out_tensor)/sizeof(float);
     for(int i=0;i<outsize;i++)

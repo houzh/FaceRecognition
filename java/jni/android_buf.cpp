@@ -2,8 +2,8 @@
 #include<android/log.h>
 #include <strstream>
 #include <iostream>
-#define LOG "cout::AndroidBuf"
-#define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG,__VA_ARGS__)
+#define LOG "std::cout"
+#define LOGV(...)  __android_log_print(ANDROID_LOG_VERBOSE,LOG,__VA_ARGS__)
 
 AndroidBuf::AndroidBuf() {
     buffer_[BUFFER_SIZE] = '\0';
@@ -21,7 +21,7 @@ int AndroidBuf::flush_buffer() {
     if (len <= BUFFER_SIZE)
         buffer_[len] = '\0';
 
-    LOGE("%s", buffer_);
+    LOGV("%s", buffer_);
 
     pbump(-len);
     return len;

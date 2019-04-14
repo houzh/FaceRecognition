@@ -9,9 +9,11 @@ private:
     tensor_t input_tensor;
     tensor_t out_tensor;
     float*input_data;
+    int feature_len;
 public:
     MobileFacenet(const std::string&dir);
     ~MobileFacenet();
+    int GetFeatureLen(){return feature_len;}
     int GetFeature(const cv::Mat&frame,FaceBox&box,float*feature);
 };
 #endif

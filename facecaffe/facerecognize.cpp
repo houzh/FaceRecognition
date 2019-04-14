@@ -121,8 +121,6 @@ int FaceRecognize::get_feature(cv::Mat& frame,FaceBox &box,float* feature,int fs
     struct timeval tv_start;
     gettimeofday(&tv_start,NULL);
     int ret=mfnet->GetFeature(frame,box,feature);
-    if(ret>0)
-	  feature_len=ret;
     if(verbose){
         struct timeval tv_end;
         gettimeofday(&tv_end, NULL);
@@ -132,8 +130,13 @@ int FaceRecognize::get_feature(cv::Mat& frame,FaceBox &box,float* feature,int fs
     return ret;
 }
 
+int FaceRecognize::GetFeatureLength(){
+    return mfnet->GetFeatureLen();
+}
+
 void FaceRecognize::FaceMatch(const float*feature1,const float*feature2, float*match_score)
 {
+     int feature_len=GetFeatureLength();
      cv::Mat m1(feature_len, 1, CV_32FC1, (void*)feature1), m2(feature_len, 1, CV_32FC1, (void*)feature2);
      *match_score= m1.dot(m2) / cv::norm(m1, CV_L2) / cv::norm(m2, CV_L2);
 }

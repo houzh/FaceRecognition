@@ -32,7 +32,7 @@ class FaceRecognize{
 	void FaceMatch(const float*feature1,const float*feature2, float*matchscore);
 	void LableFace(Mat&frame,FaceBox &box,Scalar color=Scalar(255,255,255));
 	void LableFaces(cv::Mat &frame,std::vector<FaceBox>&boxes,Scalar color=Scalar(255,255,255));
-	int GetFeatureLength(){return feature_len;}
+	int GetFeatureLength();
 	void SetVerbose(int v=1){verbose=v;}
 	
 	void SetThreshold(float p_threshold,float r_threshold,float o_threshold);
